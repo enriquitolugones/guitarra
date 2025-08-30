@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Diapasón 12 trastes — Modos y Escalas</title>
+<title>Diapasón 12 trastes — Modos con ortografía por jónica madre</title>
 <style>
   :root{
     --bg:#1b1b1b;
@@ -40,14 +40,12 @@
     background-blend-mode:multiply;
     box-shadow:0 8px 22px rgba(0,0,0,.5);
   }
-
   .cells{
     display:grid;
     grid-template-rows:repeat(6, var(--cell-h));
     grid-template-columns:
       100fr 97fr 94fr 91fr 88fr 85fr 82fr 79fr 76fr 73fr 70fr 67fr;
-    position:relative;
-    z-index:2;
+    position:relative; z-index:2;
   }
   .cell{
     position:relative;
@@ -63,15 +61,13 @@
     font-weight:700; font-size:13px;
     display:flex; align-items:center; justify-content:center;
     box-shadow:0 2px 4px rgba(0,0,0,.40);
-    z-index:5;
-    user-select:none;
+    z-index:5; user-select:none;
   }
   .tonic{ background:#c81e1e; color:#fff }
   .in-scale{ background:#1f6feb; color:#fff }
 
   .strings{
-    pointer-events:none;
-    position:absolute; inset:0; z-index:1;
+    pointer-events:none; position:absolute; inset:0; z-index:1;
   }
   .strings::before{
     content:""; position:absolute; left:0; right:0; top:0; bottom:0;
@@ -87,8 +83,7 @@
   }
 
   .fret-numbers{
-    margin-top:8px;
-    display:grid;
+    margin-top:8px; display:grid;
     grid-template-columns:
       100fr 97fr 94fr 91fr 88fr 85fr 82fr 79fr 76fr 73fr 70fr 67fr;
     text-align:center;
@@ -105,7 +100,7 @@
 </head>
 <body>
 <main>
-  <h1>Diapasón (12 trastes) — Modos y Escalas</h1>
+  <h1>Diapasón (12 trastes) — Modos, Pentas y Menores (ortografía correcta)</h1>
 
   <div class="fretboard" id="fretboard">
     <div class="cells" id="cells"></div>
@@ -116,6 +111,7 @@
   <div class="controls">
     <label>Tonalidad:
       <select id="keySelect">
+        <!-- Orden círculo de 5tas mayores -->
         <option value="C">C</option>
         <option value="G">G</option>
         <option value="D">D</option>
@@ -135,6 +131,7 @@
     </label>
     <label>Escala:
       <select id="scaleSelect">
+        <!-- Modos de la mayor -->
         <option value="ionian">Jónico (Mayor)</option>
         <option value="dorian">Dórico</option>
         <option value="phrygian">Frigio</option>
@@ -142,8 +139,10 @@
         <option value="mixolydian">Mixolidio</option>
         <option value="aeolian">Eólico (Menor natural)</option>
         <option value="locrian">Locrio</option>
+        <!-- Pentas -->
         <option value="pentaMajor">Pentatónica Mayor</option>
         <option value="pentaMinor">Pentatónica Menor</option>
+        <!-- Menores -->
         <option value="melodicMinor">Menor melódica</option>
         <option value="harmonicMinor">Menor armónica</option>
       </select>
@@ -154,11 +153,12 @@
 </main>
 
 <script>
-  /* Cromas y visualización por defecto */
+  /* --- Cromas base y etiquetas por defecto --- */
   const SHARP   = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
   const FLAT    = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
   const DISPLAY = ["C","C#/Db","D","D#/Eb","E","F","F#/Gb","G","G#/Ab","A","A#/Bb","B"];
 
+  // Mapa nombre → índice (incluye B#, E#, Cb, Fb)
   const NAME_TO_INDEX = {
     "C":0, "B#":0,
     "C#":1,"Db":1,
@@ -174,32 +174,93 @@
     "B":11,"Cb":11
   };
 
-  /* Excepciones de ortografía */
-  const SPECIAL_NAMES = {
-    // Tonalidades mayores 'difíciles'
+  // Mayores válidas (como en tu selector)
+  const VALID_MAJORS = new Set(["C","G","D","A","E","B","F#","C#","F","Bb","Eb","Ab","Db","Gb","Cb"]);
+
+  // Excepciones de ortografía en mayores “difíciles”
+  // idx: 5=F→E#, 0=C→B#, 11=B→Cb, 4=E→Fb
+  const SPECIAL_NAMES_MAJOR = {
     "F#": { 5:"E#" },
     "C#": { 5:"E#", 0:"B#" },
     "Gb": { 11:"Cb" },
-    "Cb": { 4:"Fb", 11:"Cb" },
-    // Casos MODALES que pediste:
-    "B-lydian": { 5:"E#" },  // Si Lidio: #4 = E# (no F)
-    "F#-lydian": { 0:"B#" }  // Fa# Lidio: #4 relativo madre → B# (no C)
+    "Cb": { 4:"Fb", 11:"Cb" }
   };
 
-  function prefersFlats(key){
-    return ["F","Bb","Eb","Ab","Db","Gb","Cb"].includes(key);
-  }
+  // Offsets de grados de la mayor (semitonos desde la tónica mayor)
+  const MAJOR_DEGREE_OFFSETS = [0,2,4,5,7,9,11]; // I..VII
 
-  function nameForKey(noteIdx, key, scaleId){
-    const combo = key + "-" + scaleId;
-    if (SPECIAL_NAMES[combo] && SPECIAL_NAMES[combo][noteIdx]) return SPECIAL_NAMES[combo][noteIdx];
-    if (SPECIAL_NAMES[key] && SPECIAL_NAMES[key][noteIdx])     return SPECIAL_NAMES[key][noteIdx];
-    return prefersFlats(key) ? FLAT[noteIdx] : SHARP[noteIdx];
-  }
+  // Para decidir la jónica madre de cada escala:
+  // - Modos mayores: madre = raíz − offset(grado del modo)
+  // - Pentatónica mayor: madre = raíz (ionian)
+  // - Pentatónica menor / melódica / armónica: madre = mayor relativa (como eólico) → raíz − 9
+  const PARENT_OFFSET_BY_SCALE = {
+    ionian:        0,
+    dorian:        2,
+    phrygian:      4,
+    lydian:        5,
+    mixolydian:    7,
+    aeolian:       9,
+    locrian:       11,
+    pentaMajor:    0,
+    pentaMinor:    9,
+    melodicMinor:  9,
+    harmonicMinor: 9
+  };
 
   function idxOf(name){ return NAME_TO_INDEX[name] ?? -1; }
 
-  /* Patrones (semitonos desde tónica) */
+  // Dado un índice cromático de mayor y una preferencia, devuelve un nombre válido del selector
+  function majorNameForIndex(idx, preferFlats){
+    const sharpName = SHARP[idx];
+    const flatName  = FLAT[idx];
+    const sharpValid = VALID_MAJORS.has(sharpName);
+    const flatValid  = VALID_MAJORS.has(flatName);
+
+    if (sharpValid && !flatValid) return sharpName;   // solo existe con sostenidos (p.ej. C#)
+    if (flatValid  && !sharpValid) return flatName;   // solo existe con bemoles (p.ej. Eb)
+    if (sharpValid && flatValid){
+      // ambigua (C#/Db, F#/Gb, B/Cb) → decide por preferencia
+      return preferFlats ? flatName : sharpName;
+    }
+    // fallback (no debería ocurrir)
+    return sharpName;
+  }
+
+  // ¿Esta mayor prefiere bemoles?
+  function prefersFlatsMajorName(majorName){
+    return ["F","Bb","Eb","Ab","Db","Gb","Cb"].includes(majorName);
+  }
+
+  // Nombre mostrado según la JÓNICA MADRE (aplica excepciones)
+  function nameForByParent(noteIdx, parentMajorName){
+    // Excepción (E#, B#, Cb, Fb) si aplica en esa mayor
+    if (SPECIAL_NAMES_MAJOR[parentMajorName] && SPECIAL_NAMES_MAJOR[parentMajorName][noteIdx]){
+      return SPECIAL_NAMES_MAJOR[parentMajorName][noteIdx];
+    }
+    // Si no, usa juego de esa mayor (♭ o ♯)
+    return prefersFlatsMajorName(parentMajorName) ? FLAT[noteIdx] : SHARP[noteIdx];
+  }
+
+  // Calcula la JÓNICA MADRE (nombre válido) de una escala dada (keyName, scaleId)
+  function deriveParentMajorName(keyName, scaleId){
+    const rootIdx = idxOf(keyName);
+    const parentSemis = PARENT_OFFSET_BY_SCALE[scaleId] ?? 0;  // cuánto restar
+    const parentIdx = (rootIdx - parentSemis + 12) % 12;
+
+    // Heurística para elegir entre la versión ♯ o ♭ en los índices ambiguos:
+    // - Si la raíz elegida contiene 'b' → preferFlats
+    // - Si contiene '#' → preferSharps
+    // - Si es natural, elegimos el nombre que exista como mayor válida; si hay dos, preferimos ♯ por defecto.
+    let preferFlats = /b/.test(keyName) ? true : (/#/.test(keyName) ? false : false);
+
+    // Algunos casos naturales deben caer en bemoles por construcción (ej. G dórico → F mayor):
+    // Esta corrección ocurre sola porque majorNameForIndex da Eb/Ab/Bb/F cuando G→F=idx 5 (F existe solo como natural).
+    // Para índices ambiguos (1,3,6,8,10,11), eligiendo "preferFlats" cuando la raíz es bemol asegura familias de bemoles.
+
+    return majorNameForIndex(parentIdx, preferFlats);
+  }
+
+  /* ---------- Patrones de escalas (semitonos desde la raíz pedida) ---------- */
   const SCALE_PATTERNS = {
     ionian:[0,2,4,5,7,9,11],
     dorian:[0,2,3,5,7,9,10],
@@ -214,43 +275,46 @@
     harmonicMinor:[0,2,3,5,7,8,11]
   };
 
+  /* ---------- Construcción del diapasón (todo visible) ---------- */
   const STRINGS_TOPDOWN = ["E","B","G","D","A","E"]; // 1ª arriba → 6ª abajo
-  const FRETS=12;
+  const FRETS = 12;
 
-  /* Construcción del diapasón (todo visible al abrir) */
-  const cells=document.getElementById("cells");
-  const circles=[];
-  for(let s=0;s<6;s++){
-    const openIdx=idxOf(STRINGS_TOPDOWN[s]);
-    for(let f=1;f<=FRETS;f++){
-      const noteIdx=(openIdx+f)%12;
-      const cell=document.createElement("div");
-      cell.className="cell";
-      const dot=document.createElement("div");
-      dot.className="note";
-      dot.textContent=DISPLAY[noteIdx];   // nombres dobles por defecto
-      dot.dataset.noteIdx=noteIdx;
-      cell.appendChild(dot);
-      cells.appendChild(cell);
-      circles.push(dot);
+  const cells = document.getElementById("cells");
+  const circles = [];
+  for (let s=0; s<6; s++){
+    const openIdx = idxOf(STRINGS_TOPDOWN[s]);
+    for (let f=1; f<=FRETS; f++){
+      const noteIdx = (openIdx + f) % 12;
+      const cell = document.createElement("div"); cell.className="cell";
+      const dot  = document.createElement("div"); dot.className="note";
+      dot.textContent = DISPLAY[noteIdx];
+      dot.dataset.noteIdx = noteIdx;
+      cell.appendChild(dot); cells.appendChild(cell); circles.push(dot);
     }
   }
-  const nums=document.getElementById("fretNumbers");
-  for(let f=1;f<=FRETS;f++){const span=document.createElement("span");span.textContent=f;nums.appendChild(span);}
+  const nums = document.getElementById("fretNumbers");
+  for (let f=1; f<=FRETS; f++){ const span=document.createElement("span"); span.textContent=f; nums.appendChild(span); }
 
-  function applyScale(key,scaleId){
-    const pattern=SCALE_PATTERNS[scaleId]; if(!pattern) return;
-    const root=idxOf(key); if(root<0) return;
-    const inScale=new Set(pattern.map(o=>(root+o)%12));
+  /* ---------- Aplicar / Restablecer ---------- */
+  function applyScale(keyName, scaleId){
+    const pattern = SCALE_PATTERNS[scaleId]; if(!pattern) return;
+    const rootIdx = idxOf(keyName); if(rootIdx<0) return;
 
+    // 1) Determinar la JÓNICA MADRE según lo que has pedido
+    const parentMajorName = deriveParentMajorName(keyName, scaleId);
+
+    // 2) Con ese "parent", construimos el set de índices permitidos
+    const inScale = new Set(pattern.map(semi => (rootIdx + semi) % 12));
+
+    // 3) Pintamos con la ortografía de la jónica madre
     circles.forEach(dot=>{
-      const ni=+dot.dataset.noteIdx;
-      if(inScale.has(ni)){
+      const ni = +dot.dataset.noteIdx;
+      if (inScale.has(ni)){
         dot.style.display="flex";
-        dot.textContent=nameForKey(ni,key,scaleId);
+        dot.textContent = nameForByParent(ni, parentMajorName);
         dot.classList.remove("tonic","in-scale");
-        if(ni===root) dot.classList.add("tonic"); else dot.classList.add("in-scale");
-      }else{
+        if (ni===rootIdx) dot.classList.add("tonic"); else dot.classList.add("in-scale");
+      } else {
         dot.style.display="none";
         dot.classList.remove("tonic","in-scale");
       }
@@ -266,12 +330,12 @@
     });
   }
 
-  document.getElementById("applyBtn").addEventListener("click",()=>{
-    const key=document.getElementById("keySelect").value;
-    const scale=document.getElementById("scaleSelect").value;
-    applyScale(key,scale);
+  document.getElementById("applyBtn").addEventListener("click", ()=>{
+    const key   = document.getElementById("keySelect").value;
+    const scale = document.getElementById("scaleSelect").value;
+    applyScale(key, scale);
   });
-  document.getElementById("resetBtn").addEventListener("click",resetFretboard);
+  document.getElementById("resetBtn").addEventListener("click", resetFretboard);
 </script>
 </body>
 </html>
