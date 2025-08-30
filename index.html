@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Diapasón 12 trastes</title>
+<title>Diapasón 12 trastes (1ª arriba, sin cuerdas al aire)</title>
 <style>
   :root{
     --bg:#1b1b1b;
@@ -15,27 +15,26 @@
     --wood-hi:rgba(255,240,220,.06);
     --wood-lo:rgba(0,0,0,.08);
 
-    --nut:#e6e6e6;
-    --string:#cfcfcf;
+    --string:#d7d7d7;
 
-    --cell-h:62px;
-    --dot-size:36px;
+    --cell-h:62px;     /* alto por cuerda */
+    --dot-size:36px;   /* diámetro del círculo */
   }
 
   *{box-sizing:border-box;margin:0;padding:0}
   body{
-    background:var(--bg);
-    color:#eaeaea;
+    background:var(--bg); color:#ececec;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
-    display:flex;justify-content:center;padding:22px;
+    display:flex; justify-content:center; padding:22px;
   }
 
   main{width:min(98vw,1300px)}
-  h1{margin-bottom:12px;font-size:20px;font-weight:650}
+  h1{margin-bottom:12px; font-size:20px; font-weight:650}
 
   /* ---------- DIAPASÓN ---------- */
   .fretboard{
     position:relative; overflow:hidden; border-radius:12px;
+    /* madera con vetas suaves */
     background:
       linear-gradient(90deg, var(--wood-a), var(--wood-b)),
       repeating-linear-gradient(
@@ -45,37 +44,31 @@
         var(--wood-lo) 10px 12px,
         transparent 12px 18px
       );
-    background-blend-mode: multiply;
+    background-blend-mode:multiply;
     box-shadow:0 8px 22px rgba(0,0,0,.5);
-    padding-left:14px;
   }
 
-  .fretboard::before{
-    content:""; position:absolute; left:0; top:0; bottom:0; width:12px;
-    background:var(--nut); z-index:3;
-    border-right:2px solid #bcbcbc;
-    box-shadow:inset -2px 0 4px rgba(0,0,0,.28);
-  }
-
+  /* Celdas: 6 cuerdas (1ª arriba → 6ª abajo) × 12 trastes (1..12) */
   .cells{
     display:grid;
     grid-template-rows:repeat(6, var(--cell-h));
-    /* más ancho en general, menos diferencia */
+    /* más ancho general y decrecimiento suave */
     grid-template-columns:
       100px 97px 94px 91px 88px 85px 82px 79px 76px 73px 70px 67px;
     position:relative;
-    margin-left:12px;
-    z-index:2; /* por delante de cuerdas */
+    z-index:2; /* por delante de cuerdas (para que la cuerda quede detrás) */
   }
 
   .cell{
-    border-right:2px solid rgba(245,245,245,.65);
-    display:flex; align-items:center; justify-content:center;
     position:relative;
+    display:flex; align-items:center; justify-content:center;
+    border-right:2px solid rgba(245,245,245,.65); /* línea de traste */
   }
-  .cell:nth-child(12n){ border-right-width:3px }
 
-  /* círculos delante de cuerdas */
+  /* Traste 1 algo más grueso para marcar inicio */
+  .cell:nth-child(12n+1){ border-left:3px solid rgba(245,245,245,.85) }
+
+  /* Círculos de nota (delante de la cuerda) */
   .note{
     width:var(--dot-size); height:var(--dot-size);
     border-radius:50%;
@@ -87,71 +80,80 @@
     user-select:none;
   }
 
-  /* cuerdas por detrás */
+  /* Cuerdas por detrás de los círculos */
   .strings{
     pointer-events:none;
-    position:absolute; inset:0 0 0 12px;
-    z-index:1; /* detrás */
+    position:absolute; inset:0;
+    z-index:1; /* detrás de .note */
   }
   .strings::before{
     content:""; position:absolute; left:0; right:0; top:0; bottom:0;
+    /* 6 líneas (1ª arriba → 6ª abajo) con grosores distintos */
     background:
-      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*0.5) / 100% 3px,
-      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*1.5) / 100% 2.5px,
-      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*2.5) / 100% 2.2px,
-      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*3.5) / 100% 2px,
-      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*4.5) / 100% 1.8px,
-      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*5.5) / 100% 1.6px;
+      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*0.5) / 100% 1.6px, /* 1ª */
+      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*1.5) / 100% 1.8px, /* 2ª */
+      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*2.5) / 100% 2.0px, /* 3ª */
+      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*3.5) / 100% 2.2px, /* 4ª */
+      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*4.5) / 100% 2.5px, /* 5ª */
+      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*5.5) / 100% 3.0px; /* 6ª */
     background-repeat:no-repeat;
-    opacity:.9;
+    opacity:.95;
     filter:drop-shadow(0 1px 0 rgba(0,0,0,.35));
   }
 
+  /* Números de traste debajo */
   .fret-numbers{
-    margin-left:12px; margin-top:8px;
+    margin-top:8px;
     display:grid;
     grid-template-columns:
       100px 97px 94px 91px 88px 85px 82px 79px 76px 73px 70px 67px;
     text-align:center;
   }
-  .fret-numbers span{
-    font-size:14px; color:#f0f0f0; opacity:.95; user-select:none;
-  }
+  .fret-numbers span{ font-size:14px; color:#f0f0f0; opacity:.95; user-select:none }
 </style>
 </head>
 <body>
 <main>
-  <h1>Diapasón (12 trastes)</h1>
-  <div class="fretboard" id="fretboard">
+  <h1>Diapasón (12 trastes) — 1ª arriba, sin cuerdas al aire</h1>
+
+  <div class="fretboard" id="fretboard" aria-label="Diapasón de 12 trastes (sin cuerdas al aire)">
     <div class="cells" id="cells"></div>
     <div class="strings" aria-hidden="true"></div>
   </div>
-  <div class="fret-numbers" id="fretNumbers"></div>
+
+  <div class="fret-numbers" id="fretNumbers" aria-hidden="true"></div>
 </main>
 
 <script>
+  // Notas (con enarmónicos)
   const NOTES = ["C","C#/Db","D","D#/Eb","E","F","F#/Gb","G","G#/Ab","A","A#/Bb","B"];
-  const STRINGS_OPEN = ["E","A","D","G","B","E"]; // estándar EADGBE
-  const frets = 12;
-  const cellsDiv = document.getElementById("cells");
+  // Orden de cuerdas de ARRIBA a ABAJO: 1ª → 6ª
+  const STRINGS_TOPDOWN = ["E","B","G","D","A","E"]; // 1ª,2ª,3ª,4ª,5ª,6ª
 
-  for(let s=0; s<6; s++){
-    const open = STRINGS_OPEN[s];
-    const base = NOTES.indexOf(open);
-    for(let f=0; f<frets; f++){
-      const note = NOTES[(base+f)%12];
+  const FRETS = 12;
+  const cells = document.getElementById("cells");
+
+  // Para “sin cuerdas al aire”: empezamos en traste 1
+  // La nota = (nota al aire) + número de traste
+  for (let s = 0; s < 6; s++) {
+    const openIdx = NOTES.indexOf(STRINGS_TOPDOWN[s]); // nota al aire (no se muestra)
+    for (let fret = 1; fret <= FRETS; fret++) {
+      const note = NOTES[(openIdx + fret) % 12]; // empezando en 1
       const cell = document.createElement("div");
       cell.className = "cell";
-      const circle = document.createElement("div");
-      circle.className = "note";
-      circle.textContent = note;
-      cell.appendChild(circle);
-      cellsDiv.appendChild(cell);
+
+      const dot = document.createElement("div");
+      dot.className = "note";
+      dot.textContent = note;
+
+      cell.appendChild(dot);
+      cells.appendChild(cell);
     }
   }
 
+  // Números de traste debajo (1..12)
   const nums = document.getElementById("fretNumbers");
-  for (let f=1; f<=frets; f++){
+  for (let f = 1; f <= FRETS; f++) {
     const span = document.createElement("span");
     span.textContent = f;
     nums.appendChild(span);
