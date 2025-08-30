@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Diapasón 12 trastes — Jónico</title>
+<title>Diapasón 12 trastes — Jónico (todas tonalidades)</title>
 <style>
   :root{
     --bg:#1b1b1b;
@@ -101,22 +101,17 @@
   .fret-numbers span{ font-size:14px; color:#f0f0f0; opacity:.95; user-select:none }
 
   /* Controles */
-  .controls{
-    margin-top:20px; text-align:center;
-  }
-  select, button{
-    font-size:14px; padding:6px 10px; margin:0 6px;
-  }
+  .controls{ margin-top:20px; text-align:center }
+  select, button{ font-size:14px; padding:6px 10px; margin:0 6px }
   button{
-    background:#444; color:#fff; border:1px solid #777; border-radius:4px;
-    cursor:pointer;
+    background:#444; color:#fff; border:1px solid #777; border-radius:4px; cursor:pointer;
   }
   button:hover{ background:#666 }
 </style>
 </head>
 <body>
 <main>
-  <h1>Diapasón (12 trastes) — Jónico</h1>
+  <h1>Diapasón (12 trastes) — Escalas Jónicas</h1>
 
   <div class="fretboard" id="fretboard">
     <div class="cells" id="cells"></div>
@@ -127,12 +122,22 @@
   <div class="controls">
     <label>Tonalidad:
       <select id="keySelect">
-        <option value="C">C</option><option value="C#">C#</option><option value="Db">Db</option>
-        <option value="D">D</option><option value="D#">D#</option><option value="Eb">Eb</option>
-        <option value="E">E</option><option value="F">F</option><option value="F#">F#</option><option value="Gb">Gb</option>
-        <option value="G">G</option><option value="G#">G#</option><option value="Ab">Ab</option>
-        <option value="A">A</option><option value="A#">A#</option><option value="Bb">Bb</option>
+        <!-- Orden de círculo de quintas -->
+        <option value="C">C</option>
+        <option value="G">G</option>
+        <option value="D">D</option>
+        <option value="A">A</option>
+        <option value="E">E</option>
         <option value="B">B</option>
+        <option value="F#">F#</option>
+        <option value="C#">C#</option>
+        <option value="F">F</option>
+        <option value="Bb">Bb</option>
+        <option value="Eb">Eb</option>
+        <option value="Ab">Ab</option>
+        <option value="Db">Db</option>
+        <option value="Gb">Gb</option>
+        <option value="Cb">Cb</option>
       </select>
     </label>
     <label>Escala:
@@ -146,71 +151,87 @@
 </main>
 
 <script>
-  /* --- DATOS BÁSICOS --- */
+  /* --- Conjuntos cromáticos --- */
   const SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
   const FLAT  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
   const DISPLAY = ["C","C#/Db","D","D#/Eb","E","F","F#/Gb","G","G#/Ab","A","A#/Bb","B"];
-  const STRINGS_TOPDOWN = ["E","B","G","D","A","E"];
+
+  const STRINGS_TOPDOWN = ["E","B","G","D","A","E"]; // 1ª arriba → 6ª abajo
   const FRETS = 12;
 
   function idxOf(name){
-    let i = SHARP.indexOf(name);
-    if (i !== -1) return i;
+    const iS = SHARP.indexOf(name);
+    if (iS !== -1) return iS;
     return FLAT.indexOf(name);
   }
 
-  /* --- CONSTRUCCIÓN --- */
+  // ¿Preferir bemoles?
+  function prefersFlats(key){
+    return ["F","Bb","Eb","Ab","Db","Gb","Cb"].includes(key);
+  }
+
+  function nameForKey(noteIdx, key){
+    return prefersFlats(key) ? FLAT[noteIdx] : SHARP[noteIdx];
+  }
+
+  /* Construcción del diapasón */
   const cells = document.getElementById("cells");
   const circles = [];
   for (let s=0; s<6; s++){
     const openIdx = idxOf(STRINGS_TOPDOWN[s]);
     for (let fret=1; fret<=FRETS; fret++){
-      const noteIdx = (openIdx+fret)%12;
+      const noteIdx = (openIdx + fret) % 12;
       const cell = document.createElement("div");
       cell.className = "cell";
       const dot = document.createElement("div");
       dot.className = "note";
-      dot.textContent = DISPLAY[noteIdx];
+      dot.textContent = DISPLAY[noteIdx];   // nombres dobles por defecto
       dot.dataset.noteIdx = noteIdx;
       cell.appendChild(dot);
       cells.appendChild(cell);
       circles.push(dot);
     }
   }
-  const nums=document.getElementById("fretNumbers");
-  for(let f=1;f<=FRETS;f++){let span=document.createElement("span");span.textContent=f;nums.appendChild(span);}
 
-  /* --- JÓNICO --- */
+  // Números de traste
+  const nums = document.getElementById("fretNumbers");
+  for (let f=1; f<=FRETS; f++){ const span=document.createElement("span"); span.textContent=f; nums.appendChild(span); }
+
+  /* --- Jónico --- */
   const IONIAN = [0,2,4,5,7,9,11];
   function applyIonian(key){
-    const root=idxOf(key); if(root<0) return;
-    const inScale=new Set(IONIAN.map(o=>(root+o)%12));
+    const root = idxOf(key); if (root < 0) return;
+    const inScale = new Set(IONIAN.map(o => (root+o)%12));
     circles.forEach(dot=>{
-      const ni=Number(dot.dataset.noteIdx);
-      dot.style.display=inScale.has(ni)?"flex":"none";
-      dot.classList.remove("tonic","in-scale");
-      if(inScale.has(ni)){
-        if(ni===root) dot.classList.add("tonic");
-        else dot.classList.add("in-scale");
+      const ni = Number(dot.dataset.noteIdx);
+      if (inScale.has(ni)){
+        dot.style.display="flex";
+        dot.textContent = nameForKey(ni,key);
+        dot.classList.remove("tonic","in-scale");
+        if (ni===root) dot.classList.add("tonic"); else dot.classList.add("in-scale");
+      } else {
+        dot.style.display="none";
+        dot.classList.remove("tonic","in-scale");
       }
     });
   }
 
-  /* --- RESTABLECER --- */
   function resetFretboard(){
     circles.forEach(dot=>{
+      const ni = Number(dot.dataset.noteIdx);
       dot.style.display="flex";
+      dot.textContent = DISPLAY[ni];
       dot.classList.remove("tonic","in-scale");
     });
   }
 
-  /* --- BOTONES --- */
+  /* Botones */
   document.getElementById("applyBtn").addEventListener("click",()=>{
     const key=document.getElementById("keySelect").value;
     const scale=document.getElementById("scaleSelect").value;
     if(scale==="ionian") applyIonian(key);
   });
-  document.getElementById("resetBtn").addEventListener("click",resetFretboard);
+  document.getElementById("resetBtn").addEventListener("click", resetFretboard);
 </script>
 </body>
 </html>
