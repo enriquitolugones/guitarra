@@ -8,82 +8,80 @@
 <style>
   :root{
     --bg:#202020;
-    --wood1:#9c6434;
-    --wood2:#70401a;
+    --wood1:#b07c45;
+    --wood2:#80542a;
     --nut:#ddd;
-    --string:#d0d0d0;
-    --fret:#f5f5f5;
-    --dot-bg:#ffffff;
-    --dot-color:#000000;
-    --cell-h:50px;
+    --string:#cfcfcf;
+    --cell-h:60px;  /* alto de cada cuerda (más ancho en general) */
   }
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:#eaeaea;font-family:Arial,Helvetica,sans-serif;display:flex;justify-content:center}
-  main{margin:20px;width:min(95vw,960px)}
-
-  h1{margin-bottom:12px;font-size:20px;font-weight:600}
+  body{
+    background:var(--bg);
+    font-family:Arial,Helvetica,sans-serif;
+    display:flex;justify-content:center;
+    padding:20px;
+  }
+  main{width:min(95vw,1100px)}
+  h1{margin-bottom:12px;font-size:20px;font-weight:600;color:#fff}
 
   .fretboard{
-    position:relative;overflow:hidden;border-radius:12px;
+    position:relative;
+    overflow:hidden;
+    border-radius:10px;
     background:linear-gradient(90deg,var(--wood1),var(--wood2));
     box-shadow:0 6px 16px rgba(0,0,0,.5);
+    padding-left:14px; /* cejuela */
   }
+
   /* Cejuela */
   .fretboard::before{
     content:"";position:absolute;left:0;top:0;bottom:0;width:12px;
-    background:var(--nut);z-index:3;
-    border-right:2px solid #aaa;
+    background:var(--nut);z-index:3;border-right:2px solid #aaa;
   }
 
   /* Grid: 6 cuerdas × 12 trastes */
   .cells{
     display:grid;
     grid-template-rows:repeat(6,var(--cell-h));
-    grid-template-columns: 80px 75px 70px 65px 60px 55px 50px 48px 46px 44px 42px 40px;
-    /* cada traste más estrecho */
+    /* cada traste un poco más estrecho, pero con poca diferencia */
+    grid-template-columns: 85px 82px 80px 78px 76px 74px 72px 70px 68px 66px 64px 62px;
     position:relative;
     margin-left:12px;
   }
 
   .cell{
-    border-right:2px solid rgba(255,255,255,.5);
+    border-right:2px solid rgba(255,255,255,.6);
     display:flex;justify-content:center;align-items:center;
     position:relative;
   }
   .cell:last-child{border-right-width:3px}
 
-  /* Círculos con notas */
+  /* círculos con notas */
   .note{
-    width:32px;height:32px;border-radius:50%;
-    background:var(--dot-bg);
-    color:var(--dot-color);
+    width:34px;height:34px;border-radius:50%;
+    background:#fff;color:#000;
     font-size:12px;font-weight:bold;
     display:flex;align-items:center;justify-content:center;
     box-shadow:0 2px 4px rgba(0,0,0,.4);
   }
 
-  /* Cuerdas horizontales */
+  /* 6 cuerdas horizontales */
   .strings{
-    pointer-events:none;position:absolute;inset:0;z-index:2;
+    pointer-events:none;position:absolute;inset:0 0 0 12px;z-index:2;
     display:grid;grid-template-rows:repeat(6,var(--cell-h));
   }
-  .strings div{
-    border-top:2px solid var(--string);
-  }
-  .strings div:first-child{border-top-width:4px}   /* 6ª más gruesa */
-  .strings div:last-child{border-bottom:2px solid var(--string)} /* cerrar */
-  
-  /* Números de traste debajo */
+  .strings div{border-top:2px solid var(--string)}
+  .strings div:first-child{border-top-width:4px} /* 6ª cuerda gruesa */
+  .strings div:last-child{border-bottom:2px solid var(--string)} /* 1ª cuerda */
+
+  /* números de traste debajo */
   .fret-numbers{
     margin-left:12px;
     display:grid;
-    grid-template-columns: 80px 75px 70px 65px 60px 55px 50px 48px 46px 44px 42px 40px;
+    grid-template-columns: 85px 82px 80px 78px 76px 74px 72px 70px 68px 66px 64px 62px;
     text-align:center;
     margin-top:6px;
   }
-  .fret-numbers span{
-    font-size:12px;color:#eee;
-  }
+  .fret-numbers span{font-size:14px;color:#fff}
 </style>
 </head>
 <body>
@@ -100,13 +98,13 @@
 
 <script>
   const notes = ["C","C#/Db","D","D#/Eb","E","F","F#/Gb","G","G#/Ab","A","A#/Bb","B"];
-  const stringsOpen = ["E","B","G","D","A","E"]; // 1ª a 6ª (de arriba a abajo invertido si quieres)
+  const stringsOpen = ["E","B","G","D","A","E"]; // 1ª a 6ª
 
   const cellsDiv = document.getElementById("cells");
   const frets = 12;
 
   // construir grilla de notas
-  for(let s=0; s<6; s++){           // 6 cuerdas
+  for(let s=0; s<6; s++){           
     const openNote = stringsOpen[s];
     const idx = notes.indexOf(openNote);
     for(let f=0; f<frets; f++){
@@ -121,7 +119,7 @@
     }
   }
 
-  // números de trastes (debajo)
+  // números de trastes
   const nums = document.getElementById("fretNumbers");
   for(let f=1; f<=frets; f++){
     const span = document.createElement("span");
