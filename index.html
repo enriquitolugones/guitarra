@@ -47,7 +47,7 @@
     display:grid;
     grid-template-rows:repeat(6, var(--cell-h));
     grid-template-columns:
-      100fr 97fr 94fr 91fr 88fr 85fr 82fr 79fr 76fr 73fr 70fr 67fr; /* proporciones conservadas */
+      100fr 97fr 94fr 91fr 88fr 85fr 82fr 79fr 76fr 73fr 70fr 67fr;
     position:relative;
     z-index:2;
   }
@@ -57,7 +57,7 @@
     display:flex; align-items:center; justify-content:center;
     border-right:2px solid rgba(245,245,245,.65);
   }
-  .cell:nth-child(12n+1){ border-left:3px solid rgba(245,245,245,.85) } /* traste 1 */
+  .cell:nth-child(12n+1){ border-left:3px solid rgba(245,245,245,.85) }
 
   .note{
     width:var(--dot-size); height:var(--dot-size);
@@ -68,9 +68,7 @@
     box-shadow:0 2px 4px rgba(0,0,0,.40);
     z-index:5;
     user-select:none;
-    /* al cargar: TODO visible */
   }
-  /* Colores al filtrar */
   .tonic{ background:#c81e1e; color:#fff }
   .in-scale{ background:#1f6feb; color:#fff }
 
@@ -129,23 +127,11 @@
   <div class="controls">
     <label>Tonalidad:
       <select id="keySelect">
-        <!-- 15 armaduras/enarmónicas separadas -->
-        <option value="C">C</option>
-        <option value="C#">C#</option>
-        <option value="Db">Db</option>
-        <option value="D">D</option>
-        <option value="D#">D#</option>
-        <option value="Eb">Eb</option>
-        <option value="E">E</option>
-        <option value="F">F</option>
-        <option value="F#">F#</option>
-        <option value="Gb">Gb</option>
-        <option value="G">G</option>
-        <option value="G#">G#</option>
-        <option value="Ab">Ab</option>
-        <option value="A">A</option>
-        <option value="A#">A#</option>
-        <option value="Bb">Bb</option>
+        <option value="C">C</option><option value="C#">C#</option><option value="Db">Db</option>
+        <option value="D">D</option><option value="D#">D#</option><option value="Eb">Eb</option>
+        <option value="E">E</option><option value="F">F</option><option value="F#">F#</option><option value="Gb">Gb</option>
+        <option value="G">G</option><option value="G#">G#</option><option value="Ab">Ab</option>
+        <option value="A">A</option><option value="A#">A#</option><option value="Bb">Bb</option>
         <option value="B">B</option>
       </select>
     </label>
@@ -155,6 +141,7 @@
       </select>
     </label>
     <button id="applyBtn">Aplicar</button>
+    <button id="resetBtn">Restablecer</button>
   </div>
 </main>
 
@@ -162,74 +149,68 @@
   /* --- DATOS BÁSICOS --- */
   const SHARP = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
   const FLAT  = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
-  // Texto visible en los círculos (como tenías: ambos nombres)
   const DISPLAY = ["C","C#/Db","D","D#/Eb","E","F","F#/Gb","G","G#/Ab","A","A#/Bb","B"];
-  // Orden de cuerdas (1ª arriba → 6ª abajo), sin “al aire” en el dibujo (empezamos traste 1)
-  const STRINGS_TOPDOWN = ["E","B","G","D","A","E"]; // 1ª→6ª
+  const STRINGS_TOPDOWN = ["E","B","G","D","A","E"];
   const FRETS = 12;
 
-  // Elegir si esa tonalidad prefiere bemoles (para futuro, si quisieras reescritura de nombres)
-  function prefersFlats(key){
-    return /b$/.test(key) || key === "F";
-  }
-  // Índice cromático del nombre (acepta C, C#, Db...)
   function idxOf(name){
-    const iS = SHARP.indexOf(name);
-    if (iS !== -1) return iS;
+    let i = SHARP.indexOf(name);
+    if (i !== -1) return i;
     return FLAT.indexOf(name);
   }
 
-  /* --- CONSTRUCCIÓN DEL DIAPASÓN (TODO VISIBLE AL INICIO) --- */
+  /* --- CONSTRUCCIÓN --- */
   const cells = document.getElementById("cells");
-  const circles = []; // guardo refs para luego filtrar
+  const circles = [];
   for (let s=0; s<6; s++){
     const openIdx = idxOf(STRINGS_TOPDOWN[s]);
     for (let fret=1; fret<=FRETS; fret++){
-      const noteIdx = (openIdx + fret) % 12;
+      const noteIdx = (openIdx+fret)%12;
       const cell = document.createElement("div");
       cell.className = "cell";
       const dot = document.createElement("div");
       dot.className = "note";
       dot.textContent = DISPLAY[noteIdx];
-      dot.dataset.noteIdx = noteIdx; // guardo el índice puro
+      dot.dataset.noteIdx = noteIdx;
       cell.appendChild(dot);
       cells.appendChild(cell);
       circles.push(dot);
     }
   }
-  // Números de traste
-  const nums = document.getElementById("fretNumbers");
-  for (let f=1; f<=FRETS; f++){ const span=document.createElement("span"); span.textContent=f; nums.appendChild(span); }
+  const nums=document.getElementById("fretNumbers");
+  for(let f=1;f<=FRETS;f++){let span=document.createElement("span");span.textContent=f;nums.appendChild(span);}
 
-  /* --- LÓGICA JÓNICO (Mayor) --- */
-  // Intervalos mayor (jónico): 0,2,4,5,7,9,11
-  const IONIAN_OFFSETS = [0,2,4,5,7,9,11];
-
+  /* --- JÓNICO --- */
+  const IONIAN = [0,2,4,5,7,9,11];
   function applyIonian(key){
-    const rootIdx = idxOf(key);
-    if (rootIdx < 0) return;
-
-    // set de índices permitidos
-    const inScale = new Set(IONIAN_OFFSETS.map(o => (rootIdx + o) % 12));
-
-    // Mostrar/ocultar y colorear
+    const root=idxOf(key); if(root<0) return;
+    const inScale=new Set(IONIAN.map(o=>(root+o)%12));
     circles.forEach(dot=>{
-      const ni = Number(dot.dataset.noteIdx);
-      dot.style.display = inScale.has(ni) ? "flex" : "none";
+      const ni=Number(dot.dataset.noteIdx);
+      dot.style.display=inScale.has(ni)?"flex":"none";
       dot.classList.remove("tonic","in-scale");
-      if (inScale.has(ni)){
-        if (ni === rootIdx) dot.classList.add("tonic");
+      if(inScale.has(ni)){
+        if(ni===root) dot.classList.add("tonic");
         else dot.classList.add("in-scale");
       }
     });
   }
 
-  /* --- BOTÓN APLICAR --- */
-  document.getElementById("applyBtn").addEventListener("click", ()=>{
-    const key = document.getElementById("keySelect").value;        // tonalidad elegida
-    const scale = document.getElementById("scaleSelect").value;    // de momento solo "ionian"
-    if (scale === "ionian") applyIonian(key);
+  /* --- RESTABLECER --- */
+  function resetFretboard(){
+    circles.forEach(dot=>{
+      dot.style.display="flex";
+      dot.classList.remove("tonic","in-scale");
+    });
+  }
+
+  /* --- BOTONES --- */
+  document.getElementById("applyBtn").addEventListener("click",()=>{
+    const key=document.getElementById("keySelect").value;
+    const scale=document.getElementById("scaleSelect").value;
+    if(scale==="ionian") applyIonian(key);
   });
+  document.getElementById("resetBtn").addEventListener("click",resetFretboard);
 </script>
 </body>
 </html>
