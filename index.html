@@ -98,13 +98,18 @@
   }
   .fret-numbers span{ font-size:14px; color:#f0f0f0; opacity:.95; user-select:none }
 
-  /* Selectores */
+  /* Selectores y botón */
   .controls{
     margin-top:20px; text-align:center;
   }
-  select{
-    font-size:14px; padding:4px 8px; margin:0 10px;
+  select, button{
+    font-size:14px; padding:6px 10px; margin:0 6px;
   }
+  button{
+    background:#444; color:#fff; border:1px solid #777; border-radius:4px;
+    cursor:pointer;
+  }
+  button:hover{ background:#666 }
 </style>
 </head>
 <body>
@@ -146,6 +151,7 @@
         <option>Pentatónica Menor</option>
       </select>
     </label>
+    <button id="applyBtn">Aplicar</button>
   </div>
 </main>
 
@@ -157,7 +163,7 @@
   const cells = document.getElementById("cells");
 
   for (let s=0; s<6; s++) {
-    const openIdx = NOTES.indexOf(STRINGS_TOPDOWN[s].split("/")[0]); // usa primera forma
+    const openIdx = NOTES.indexOf(STRINGS_TOPDOWN[s].split("/")[0]);
     for (let f=1; f<=FRETS; f++) {
       const note = NOTES[(openIdx+f)%12];
       const cell = document.createElement("div");
@@ -176,6 +182,11 @@
     span.textContent = f;
     nums.appendChild(span);
   }
+
+  // Botón aún sin lógica
+  document.getElementById("applyBtn").addEventListener("click", ()=>{
+    alert("Aquí se aplicará el filtro según la tonalidad y escala elegidas.");
+  });
 </script>
 </body>
 </html>
