@@ -7,121 +7,172 @@
 <title>Diapasón 12 trastes</title>
 <style>
   :root{
-    --bg:#202020;
-    --wood1:#b07c45;
-    --wood2:#80542a;
-    --nut:#ddd;
-    --string:#cfcfcf;
-    --cell-h:60px;  /* alto de cada cuerda (más ancho en general) */
+    --bg:#1b1b1b;
+
+    /* Madera más natural (mezcla cálida + veta sutil) */
+    --wood-a:#8a5a33;   /* tono medio */
+    --wood-b:#6c4424;   /* tono oscuro */
+    --wood-hi:rgba(255,240,220,.06); /* vetas claras suaves */
+    --wood-lo:rgba(0,0,0,.08);       /* vetas oscuras suaves */
+
+    --nut:#e6e6e6;
+
+    /* Cuerdas: arriba del todo (pasan por encima de los círculos) */
+    --string:#d7d7d7;
+
+    --cell-h:62px;   /* alto por cuerda -> diapasón más ancho */
+    --dot-size:34px; /* diámetro del círculo de nota */
   }
+
+  *{box-sizing:border-box;margin:0;padding:0}
   body{
     background:var(--bg);
-    font-family:Arial,Helvetica,sans-serif;
-    display:flex;justify-content:center;
-    padding:20px;
+    color:#eaeaea;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    display:flex;justify-content:center;padding:22px;
   }
-  main{width:min(95vw,1100px)}
-  h1{margin-bottom:12px;font-size:20px;font-weight:600;color:#fff}
 
+  main{width:min(95vw,1160px)}
+  h1{margin-bottom:12px;font-size:20px;font-weight:650}
+
+  /* ---------- DIAPASÓN ---------- */
   .fretboard{
-    position:relative;
-    overflow:hidden;
-    border-radius:10px;
-    background:linear-gradient(90deg,var(--wood1),var(--wood2));
-    box-shadow:0 6px 16px rgba(0,0,0,.5);
+    position:relative; overflow:hidden; border-radius:12px;
+    /* Dos capas para madera: gradiente principal + vetas sutiles */
+    background:
+      linear-gradient(90deg, var(--wood-a), var(--wood-b)),
+      repeating-linear-gradient(
+        90deg,
+        var(--wood-hi) 0 4px,
+        transparent 4px 10px,
+        var(--wood-lo) 10px 12px,
+        transparent 12px 18px
+      );
+    background-blend-mode: multiply;
+    box-shadow:0 8px 22px rgba(0,0,0,.5);
     padding-left:14px; /* cejuela */
   }
 
-  /* Cejuela */
+  /* Cejuela (a la izquierda) */
   .fretboard::before{
-    content:"";position:absolute;left:0;top:0;bottom:0;width:12px;
-    background:var(--nut);z-index:3;border-right:2px solid #aaa;
+    content:""; position:absolute; left:0; top:0; bottom:0; width:12px;
+    background:var(--nut); z-index:3;
+    border-right:2px solid #bcbcbc;
+    box-shadow:inset -2px 0 4px rgba(0,0,0,.28);
   }
 
-  /* Grid: 6 cuerdas × 12 trastes */
+  /* Celdas 6 x 12: trastes decrecen con poca diferencia (más real) */
   .cells{
     display:grid;
-    grid-template-rows:repeat(6,var(--cell-h));
-    /* cada traste un poco más estrecho, pero con poca diferencia */
-    grid-template-columns: 85px 82px 80px 78px 76px 74px 72px 70px 68px 66px 64px 62px;
+    grid-template-rows:repeat(6, var(--cell-h));
+    grid-template-columns:
+      90px 88px 86px 84px 82px 80px 78px 76px 74px 72px 70px 68px;
     position:relative;
-    margin-left:12px;
+    margin-left:12px; /* separa de cejuela */
+    z-index:1; /* por debajo de las cuerdas */
   }
 
   .cell{
-    border-right:2px solid rgba(255,255,255,.6);
-    display:flex;justify-content:center;align-items:center;
     position:relative;
+    border-right:2px solid rgba(245,245,245,.65); /* traste */
+    display:flex; align-items:center; justify-content:center;
   }
-  .cell:last-child{border-right-width:3px}
+  .cell:nth-child(12n){ border-right-width:3px } /* 12º un pelín más grueso */
 
-  /* círculos con notas */
+  /* Círculo de nota: queda DEBAJO de las cuerdas (z-index bajo) */
   .note{
-    width:34px;height:34px;border-radius:50%;
-    background:#fff;color:#000;
-    font-size:12px;font-weight:bold;
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 2px 4px rgba(0,0,0,.4);
+    width:var(--dot-size); height:var(--dot-size);
+    border-radius:50%;
+    background:#ffffff; color:#000;
+    font-weight:700; font-size:12px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:0 2px 4px rgba(0,0,0,.40);
+    z-index:1;
+    user-select:none;
   }
 
-  /* 6 cuerdas horizontales */
+  /* Cuerdas (6 líneas horizontales) – CAPA SUPERIOR */
   .strings{
-    pointer-events:none;position:absolute;inset:0 0 0 12px;z-index:2;
-    display:grid;grid-template-rows:repeat(6,var(--cell-h));
+    pointer-events:none;
+    position:absolute; inset:0 0 0 12px;
+    z-index:5; /* por encima de los círculos */
   }
-  .strings div{border-top:2px solid var(--string)}
-  .strings div:first-child{border-top-width:4px} /* 6ª cuerda gruesa */
-  .strings div:last-child{border-bottom:2px solid var(--string)} /* 1ª cuerda */
+  /* Se dibujan con múltiples gradientes para grosor distinto */
+  .strings::before{
+    content:""; position:absolute; left:0; right:0; top:0; bottom:0;
+    background:
+      /* 6ª (más gruesa) */
+      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*0.5) / 100% 3px,
+      /* 5ª */
+      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*1.5) / 100% 2.5px,
+      /* 4ª */
+      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*2.5) / 100% 2.2px,
+      /* 3ª */
+      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*3.5) / 100% 2px,
+      /* 2ª */
+      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*4.5) / 100% 1.8px,
+      /* 1ª (más fina) */
+      linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*5.5) / 100% 1.6px;
+    background-repeat:no-repeat;
+    opacity:.95;
+    filter: drop-shadow(0 1px 0 rgba(0,0,0,.35));
+  }
 
-  /* números de traste debajo */
+  /* Números de traste DEBAJO del diapasón */
   .fret-numbers{
-    margin-left:12px;
+    margin-left:12px; margin-top:8px;
     display:grid;
-    grid-template-columns: 85px 82px 80px 78px 76px 74px 72px 70px 68px 66px 64px 62px;
+    grid-template-columns:
+      90px 88px 86px 84px 82px 80px 78px 76px 74px 72px 70px 68px;
     text-align:center;
-    margin-top:6px;
   }
-  .fret-numbers span{font-size:14px;color:#fff}
+  .fret-numbers span{
+    font-size:14px; color:#f0f0f0; opacity:.95; user-select:none;
+  }
 </style>
 </head>
 <body>
 <main>
   <h1>Diapasón (12 trastes)</h1>
-  <div class="fretboard" id="fretboard">
+
+  <div class="fretboard" id="fretboard" aria-label="Diapasón de 12 trastes">
     <div class="cells" id="cells"></div>
-    <div class="strings">
-      <div></div><div></div><div></div><div></div><div></div><div></div>
-    </div>
+    <div class="strings" aria-hidden="true"></div>
   </div>
-  <div class="fret-numbers" id="fretNumbers"></div>
+
+  <div class="fret-numbers" id="fretNumbers" aria-hidden="true"></div>
 </main>
 
 <script>
-  const notes = ["C","C#/Db","D","D#/Eb","E","F","F#/Gb","G","G#/Ab","A","A#/Bb","B"];
-  const stringsOpen = ["E","B","G","D","A","E"]; // 1ª a 6ª
+  // Notas con sostenidos/enarmónicos como pediste
+  const NOTES = ["C","C#/Db","D","D#/Eb","E","F","F#/Gb","G","G#/Ab","A","A#/Bb","B"];
+  // Orden de cuerdas (de arriba a abajo visual) = 6ª → 1ª
+  const STRINGS_OPEN = ["E","A","D","G","B","E"]; // estándar EADGBE
 
-  const cellsDiv = document.getElementById("cells");
   const frets = 12;
+  const cellsDiv = document.getElementById("cells");
 
-  // construir grilla de notas
-  for(let s=0; s<6; s++){           
-    const openNote = stringsOpen[s];
-    const idx = notes.indexOf(openNote);
+  // Construye 6 x 12 y coloca círculos con la nota de cada posición
+  for(let s=0; s<6; s++){
+    const open = STRINGS_OPEN[s];
+    const base = NOTES.indexOf(open);
     for(let f=0; f<frets; f++){
-      const note = notes[(idx+f)%12];
+      const note = NOTES[(base + f) % 12];
       const cell = document.createElement("div");
       cell.className = "cell";
+
       const circle = document.createElement("div");
       circle.className = "note";
       circle.textContent = note;
+
       cell.appendChild(circle);
       cellsDiv.appendChild(cell);
     }
   }
 
-  // números de trastes
+  // Números de traste (1..12) debajo
   const nums = document.getElementById("fretNumbers");
-  for(let f=1; f<=frets; f++){
+  for (let f=1; f<=frets; f++){
     const span = document.createElement("span");
     span.textContent = f;
     nums.appendChild(span);
