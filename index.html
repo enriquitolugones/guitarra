@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Diapasón 12 trastes — Modos con ortografía por jónica madre</title>
+<title>Diapasón 12 trastes — Modos, Pentas y Menores (ortografía correcta por jónica madre)</title>
 <style>
   :root{
     --bg:#1b1b1b;
@@ -186,44 +186,56 @@
     "Cb": { 4:"Fb", 11:"Cb" }
   };
 
-  // Offsets de grados de la mayor (semitonos desde la tónica mayor)
-  const MAJOR_DEGREE_OFFSETS = [0,2,4,5,7,9,11]; // I..VII
-
   // Para decidir la jónica madre de cada escala:
-  // - Modos mayores: madre = raíz − offset(grado del modo)
-  // - Pentatónica mayor: madre = raíz (ionian)
-  // - Pentatónica menor / melódica / armónica: madre = mayor relativa (como eólico) → raíz − 9
+  // - Modos de la mayor: madre = raíz − [0,2,4,5,7,9,11] según el modo
+  // - Penta mayor: madre = raíz
+  // - Penta menor / melódica / armónica: madre = mayor relativa (raíz − 9)
   const PARENT_OFFSET_BY_SCALE = {
-    ionian:        0,
-    dorian:        2,
-    phrygian:      4,
-    lydian:        5,
-    mixolydian:    7,
-    aeolian:       9,
-    locrian:       11,
+    ionian:        0,   // I
+    dorian:        2,   // II
+    phrygian:      4,   // III
+    lydian:        5,   // IV
+    mixolydian:    7,   // V
+    aeolian:       9,   // VI
+    locrian:       11,  // VII
     pentaMajor:    0,
-    pentaMinor:    9,
-    melodicMinor:  9,
-    harmonicMinor: 9
+    pentaMinor:    9,   // relativa mayor
+    melodicMinor:  9,   // relativa mayor
+    harmonicMinor: 9    // relativa mayor
   };
 
   function idxOf(name){ return NAME_TO_INDEX[name] ?? -1; }
 
-  // Dado un índice cromático de mayor y una preferencia, devuelve un nombre válido del selector
+  // Dado un índice de mayor, elige si esa madre debe escribirse en ♭ o ♯
+  function preferFlatsForParentIdx(parentIdx, keyName){
+    // Exclusivamente lado bemoles o naturales de familia de bemoles
+    const FLAT_SIDE_STRICT = new Set([5,10,3,8]); // F, Bb, Eb, Ab
+    const SHARP_SIDE_STRICT= new Set([7,2,9,4]);  // G, D, A, E
+
+    if (FLAT_SIDE_STRICT.has(parentIdx)) return true;
+    if (SHARP_SIDE_STRICT.has(parentIdx)) return false;
+
+    // Ambiguos: 1 (C#/Db), 6 (F#/Gb), 11 (B/Cb)
+    // Si la raíz pedida es bemol, fuerza bemoles; si es sostenido, fuerza sostenidos.
+    if (/b/.test(keyName)) return true;
+    if (/#/.test(keyName)) return false;
+
+    // Si la raíz es natural y la jónica madre cae en índice ambiguo,
+    // priorizamos bemoles para evitar A# en familias de ♭ (corrige tus casos reportados).
+    return true;
+  }
+
+  // Devuelve el nombre de mayor válido (del selector) para un índice y la preferencia ♭/♯
   function majorNameForIndex(idx, preferFlats){
     const sharpName = SHARP[idx];
     const flatName  = FLAT[idx];
     const sharpValid = VALID_MAJORS.has(sharpName);
     const flatValid  = VALID_MAJORS.has(flatName);
 
-    if (sharpValid && !flatValid) return sharpName;   // solo existe con sostenidos (p.ej. C#)
-    if (flatValid  && !sharpValid) return flatName;   // solo existe con bemoles (p.ej. Eb)
-    if (sharpValid && flatValid){
-      // ambigua (C#/Db, F#/Gb, B/Cb) → decide por preferencia
-      return preferFlats ? flatName : sharpName;
-    }
-    // fallback (no debería ocurrir)
-    return sharpName;
+    if (sharpValid && !flatValid) return sharpName;   // p.ej. C#
+    if (flatValid  && !sharpValid) return flatName;   // p.ej. Eb
+    if (sharpValid && flatValid)   return preferFlats ? flatName : sharpName; // C#/Db, F#/Gb, B/Cb
+    return sharpName; // fallback
   }
 
   // ¿Esta mayor prefiere bemoles?
@@ -231,32 +243,21 @@
     return ["F","Bb","Eb","Ab","Db","Gb","Cb"].includes(majorName);
   }
 
-  // Nombre mostrado según la JÓNICA MADRE (aplica excepciones)
+  // Nombre mostrado según la JÓNICA MADRE (aplica excepciones E#, B#, Cb, Fb)
   function nameForByParent(noteIdx, parentMajorName){
-    // Excepción (E#, B#, Cb, Fb) si aplica en esa mayor
     if (SPECIAL_NAMES_MAJOR[parentMajorName] && SPECIAL_NAMES_MAJOR[parentMajorName][noteIdx]){
       return SPECIAL_NAMES_MAJOR[parentMajorName][noteIdx];
     }
-    // Si no, usa juego de esa mayor (♭ o ♯)
     return prefersFlatsMajorName(parentMajorName) ? FLAT[noteIdx] : SHARP[noteIdx];
   }
 
   // Calcula la JÓNICA MADRE (nombre válido) de una escala dada (keyName, scaleId)
   function deriveParentMajorName(keyName, scaleId){
     const rootIdx = idxOf(keyName);
-    const parentSemis = PARENT_OFFSET_BY_SCALE[scaleId] ?? 0;  // cuánto restar
+    const parentSemis = PARENT_OFFSET_BY_SCALE[scaleId] ?? 0;
     const parentIdx = (rootIdx - parentSemis + 12) % 12;
 
-    // Heurística para elegir entre la versión ♯ o ♭ en los índices ambiguos:
-    // - Si la raíz elegida contiene 'b' → preferFlats
-    // - Si contiene '#' → preferSharps
-    // - Si es natural, elegimos el nombre que exista como mayor válida; si hay dos, preferimos ♯ por defecto.
-    let preferFlats = /b/.test(keyName) ? true : (/#/.test(keyName) ? false : false);
-
-    // Algunos casos naturales deben caer en bemoles por construcción (ej. G dórico → F mayor):
-    // Esta corrección ocurre sola porque majorNameForIndex da Eb/Ab/Bb/F cuando G→F=idx 5 (F existe solo como natural).
-    // Para índices ambiguos (1,3,6,8,10,11), eligiendo "preferFlats" cuando la raíz es bemol asegura familias de bemoles.
-
+    const preferFlats = preferFlatsForParentIdx(parentIdx, keyName);
     return majorNameForIndex(parentIdx, preferFlats);
   }
 
@@ -300,13 +301,13 @@
     const pattern = SCALE_PATTERNS[scaleId]; if(!pattern) return;
     const rootIdx = idxOf(keyName); if(rootIdx<0) return;
 
-    // 1) Determinar la JÓNICA MADRE según lo que has pedido
+    // 1) Determinar la JÓNICA MADRE de esta escala
     const parentMajorName = deriveParentMajorName(keyName, scaleId);
 
-    // 2) Con ese "parent", construimos el set de índices permitidos
+    // 2) Índices de la escala
     const inScale = new Set(pattern.map(semi => (rootIdx + semi) % 12));
 
-    // 3) Pintamos con la ortografía de la jónica madre
+    // 3) Pintar con ortografía de la jónica madre
     circles.forEach(dot=>{
       const ni = +dot.dataset.noteIdx;
       if (inScale.has(ni)){
