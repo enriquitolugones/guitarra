@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Diapasón 12 trastes — Todos los modos</title>
+<title>Diapasón 12 trastes — Modos y Escalas</title>
 <style>
   :root{
     --bg:#1b1b1b;
@@ -17,14 +17,12 @@
     --dot-size:36px;
     --maxw:1300px;
   }
-
   *{box-sizing:border-box;margin:0;padding:0}
   body{
     background:var(--bg); color:#ececec;
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
     display:flex; justify-content:center; padding:22px;
   }
-
   main{ width:100%; max-width:var(--maxw) }
   h1{ margin-bottom:12px; font-size:20px; font-weight:650; text-align:center }
 
@@ -51,7 +49,6 @@
     position:relative;
     z-index:2;
   }
-
   .cell{
     position:relative;
     display:flex; align-items:center; justify-content:center;
@@ -74,8 +71,7 @@
 
   .strings{
     pointer-events:none;
-    position:absolute; inset:0;
-    z-index:1;
+    position:absolute; inset:0; z-index:1;
   }
   .strings::before{
     content:""; position:absolute; left:0; right:0; top:0; bottom:0;
@@ -86,8 +82,7 @@
       linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*3.5) / 100% 2.2px,
       linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*4.5) / 100% 2.5px,
       linear-gradient(to right, var(--string), var(--string)) 0 calc(var(--cell-h)*5.5) / 100% 3px;
-    background-repeat:no-repeat;
-    opacity:.95;
+    background-repeat:no-repeat; opacity:.95;
     filter:drop-shadow(0 1px 0 rgba(0,0,0,.35));
   }
 
@@ -159,7 +154,7 @@
 </main>
 
 <script>
-  /* Cromas */
+  /* Cromas y visualización por defecto */
   const SHARP   = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
   const FLAT    = ["C","Db","D","Eb","E","F","Gb","G","Ab","A","Bb","B"];
   const DISPLAY = ["C","C#/Db","D","D#/Eb","E","F","F#/Gb","G","G#/Ab","A","A#/Bb","B"];
@@ -179,15 +174,16 @@
     "B":11,"Cb":11
   };
 
-  /* Excepciones */
+  /* Excepciones de ortografía */
   const SPECIAL_NAMES = {
-    "F#": {5:"E#"},
-    "C#": {5:"E#",0:"B#"},
-    "Gb": {11:"Cb"},
-    "Cb": {4:"Fb",11:"Cb"},
-    // casos modales
-    "B-mixolydian": {5:"F#"}, // F debe ser F#
-    "F#-lydian":    {0:"B#"}  // C debe ser B#
+    // Tonalidades mayores 'difíciles'
+    "F#": { 5:"E#" },
+    "C#": { 5:"E#", 0:"B#" },
+    "Gb": { 11:"Cb" },
+    "Cb": { 4:"Fb", 11:"Cb" },
+    // Casos MODALES que pediste:
+    "B-lydian": { 5:"E#" },  // Si Lidio: #4 = E# (no F)
+    "F#-lydian": { 0:"B#" }  // Fa# Lidio: #4 relativo madre → B# (no C)
   };
 
   function prefersFlats(key){
@@ -195,15 +191,15 @@
   }
 
   function nameForKey(noteIdx, key, scaleId){
-    const combo = key+"-"+scaleId;
+    const combo = key + "-" + scaleId;
     if (SPECIAL_NAMES[combo] && SPECIAL_NAMES[combo][noteIdx]) return SPECIAL_NAMES[combo][noteIdx];
-    if (SPECIAL_NAMES[key] && SPECIAL_NAMES[key][noteIdx]) return SPECIAL_NAMES[key][noteIdx];
+    if (SPECIAL_NAMES[key] && SPECIAL_NAMES[key][noteIdx])     return SPECIAL_NAMES[key][noteIdx];
     return prefersFlats(key) ? FLAT[noteIdx] : SHARP[noteIdx];
   }
 
   function idxOf(name){ return NAME_TO_INDEX[name] ?? -1; }
 
-  /* Patrones */
+  /* Patrones (semitonos desde tónica) */
   const SCALE_PATTERNS = {
     ionian:[0,2,4,5,7,9,11],
     dorian:[0,2,3,5,7,9,10],
@@ -218,9 +214,10 @@
     harmonicMinor:[0,2,3,5,7,8,11]
   };
 
-  const STRINGS_TOPDOWN = ["E","B","G","D","A","E"];
+  const STRINGS_TOPDOWN = ["E","B","G","D","A","E"]; // 1ª arriba → 6ª abajo
   const FRETS=12;
 
+  /* Construcción del diapasón (todo visible al abrir) */
   const cells=document.getElementById("cells");
   const circles=[];
   for(let s=0;s<6;s++){
@@ -231,7 +228,7 @@
       cell.className="cell";
       const dot=document.createElement("div");
       dot.className="note";
-      dot.textContent=DISPLAY[noteIdx];
+      dot.textContent=DISPLAY[noteIdx];   // nombres dobles por defecto
       dot.dataset.noteIdx=noteIdx;
       cell.appendChild(dot);
       cells.appendChild(cell);
@@ -245,6 +242,7 @@
     const pattern=SCALE_PATTERNS[scaleId]; if(!pattern) return;
     const root=idxOf(key); if(root<0) return;
     const inScale=new Set(pattern.map(o=>(root+o)%12));
+
     circles.forEach(dot=>{
       const ni=+dot.dataset.noteIdx;
       if(inScale.has(ni)){
@@ -252,7 +250,10 @@
         dot.textContent=nameForKey(ni,key,scaleId);
         dot.classList.remove("tonic","in-scale");
         if(ni===root) dot.classList.add("tonic"); else dot.classList.add("in-scale");
-      } else { dot.style.display="none"; dot.classList.remove("tonic","in-scale"); }
+      }else{
+        dot.style.display="none";
+        dot.classList.remove("tonic","in-scale");
+      }
     });
   }
 
